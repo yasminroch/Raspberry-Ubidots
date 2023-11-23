@@ -1,0 +1,54 @@
+import network
+from umqtt.simple import MQTTClient
+from machine import Pin, ADC
+import time
+
+# pinos usados para leitura
+led_pin = 15
+led = Pin(led_pin, Pin.OUT)
+adc = ADC(Pin(28))
+ldr_pin = 28
+
+# conexao disponibilizada pelo broker do ubidots
+BROKER_ADDRESS = "industrial.api.ubidots.com"
+PORT = 1883
+USERNAME = "BBUS-rSfSOVxI7iUE1YA5a2YpEjOMG26if8"
+
+
+PASSWORD = ""
+
+# nome do meu device no Ubidots
+TOPIC = "/v1.6/devices/raspberry-pi-pico"
+
+WIFI_SSID = "Inteli-COLLEGE"
+WIFI_PASSWORD = "QazWsx@123"
+
+# codigo de conexao para o wifi
+def entry_wifi():
+    rede = network.WLAN(network.STA_IF)
+    if not sta_if.isconnected():
+        print("Esperando a conexao")
+        sta_if.active(True)
+        sta_if.connect(WIFI_SSID, WIFI_PASSWORD)
+        while not sta_if.isconnected():
+            pass
+        print("Conectado a rede")
+    return sta_if
+
+rede = entry_wifi()
+
+client = MQTTClient("seu_dispositivo", BROKER_ADDRESS, user=USERNAME, password=PASSWORD)
+
+# O cliente se conecta ao mqtt do Ubidots
+client.connect()
+while True:
+    ldr_value = adc.read_u16()
+    if ldr_value >= 7000:
+        print("Valor do LDR:", ldr_value)
+        led.on()
+    else:
+        led.off()
+# publicacao da leitura para o corpo de mensagem para ser publicado no dashboard
+    body = '{"metrica":' + str(ldr_value) + '}'
+    client.publish(TOPIC, body)
+client.disconnect()
